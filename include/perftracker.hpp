@@ -4,6 +4,7 @@
 #include <err.h>
 #include <errno.h>
 
+#include <math.h>
 #include <string.h>
 #include <sys/time.h>
 
@@ -50,16 +51,16 @@ public:
 		return double(b.tv_sec - a.tv_sec) + double(b.tv_usec - a.tv_usec) / 1e6;
 	}
 
-	bool
+	double
 	start()
 	{
 		if (is_running())
-			return false;
+			return NAN;
 
 		t_start = t_split = t_lastsplit = t_stop = now();
 		running = true;
 
-		return true;
+		return t_start.tv_sec + (static_cast<double>(t_start.tv_usec) / 1e6);
 	}
 
 	double
@@ -130,28 +131,27 @@ class
 track_point
 {
 public:
-	track_point(const char *file_, unsigned int line_)
-		: file(file_), line(line_)
+	track_point(const char *file_, unsigned int line_, const char *func_)
+		: file(file_), line(line_), function(func_)
 	{
 	}
 
 	bool
 	operator ==(const track_point &p) const
 	{
-		if (line != p.line)
+		if (function != p.function || file != p.file || line != p.line)
 			return false;
-		if (file != p.file && ::strcmp(file, p.file) != 0)
-			return false;
-
 		return true;
 	}
 
 	bool
 	operator <(const track_point &p) const
 	{
-		if (file == p.file)
-			return line < p.line;
-		return file < p.file;
+		if (function != p.function)
+			return function < p.function;
+		if (file != p.file)
+			return file < p.file;
+		return line < p.line;
 	}
 
 public:
@@ -167,22 +167,28 @@ public:
 		return line;
 	}
 
+	const char *
+	get_function() const
+	{
+		return function;
+	}
+
 private:
 	const char *file;
 	unsigned int line;
+	const char *function;
 
 };
 
 struct
 time_entry
 {
-	time_entry(double tim_, const char *func_)
-		: tim(tim_), func(func_)
+	time_entry(double when_, double much_)
+		: when(when_), much(much_)
 	{
 	}
 
-	double tim;
-	const char *func;
+	double when, much;
 };
 
 class
@@ -196,23 +202,25 @@ private:
 public:
 	~tracker()
 	{
-		for (std::map<track_point, std::list<struct time_entry> >::iterator it = log.begin(); it != log.end(); it++) {
-			std::cout << "- " << it->first.get_file() << ":" << it->first.get_line() << ":" << std::endl;
-			for (std::list<struct time_entry>::iterator e = it->second.begin(); e != it->second.end(); e++) {
-				std::cout << "  - " << e->tim << " secs -- " << e->func << ";" << std::endl;
+		for (std::map<track_point, std::list<time_entry> >::iterator it = log.begin(); it != log.end(); it++) {
+			const track_point &p = it->first;
+			std::list<time_entry> &l = it->second;
+			std::cout << "" << p.get_file() << ":" << p.get_line() << ": " << p.get_function() << std::endl;
+			for (std::list<time_entry>::iterator e = l.begin(); e != l.end(); e++) {
+				std::cout << "  " << e->when << ": " << e->much << " secs;" << std::endl;
 			}
 		}
 	}
 
 public:
 	void
-	push(track_point point, double tim, const char *func)
+	push(track_point point, time_entry tim)
 	{
-		log[point].push_back(time_entry(tim, func));
+		log[point].push_front(tim);
 	}
 
 private:
-	std::map<track_point, std::list<struct time_entry> > log;
+	std::map<track_point, std::list<time_entry> > log;
 
 public:
 	static tracker &
@@ -230,23 +238,22 @@ class
 auto_track
 {
 public:
-	auto_track(const char *file, unsigned int line, const char *func_ = NULL)
-		: point(file, line), func(func_)
+	auto_track(const char *file, unsigned int line, const char *function = NULL)
+		: point(file, line, function)
 	{
-		t.start();
+		start = t.start();
 	}
 
 	~auto_track()
 	{
-		double tim = t.stop();
-
-		tracker::get_instance().push(point, tim, func);
+		time_entry tim(start, t.stop());
+		tracker::get_instance().push(point, tim);
 	}
 
 private:
 	timer t;
 	track_point point;
-	const char *func;
+	double start;
 
 };
 
