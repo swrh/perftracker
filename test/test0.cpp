@@ -32,5 +32,8 @@ main(int argc, char *argv[])
 	test0(5);
 	test0(6);
 
+	PT_DUMP();
+	PT_SETFILENAME(NULL);
+
 	return EXIT_SUCCESS;
 }

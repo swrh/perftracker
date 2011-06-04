@@ -11,8 +11,10 @@
 #include <map>
 #include <list>
 
-#define PT_TRACKPOINT() perftracker::auto_track __autotrack(__FILE__, __LINE__, __PRETTY_FUNCTION__)
-#define PT_SETFILENAME(x) perftracker::tracker::get_instance().set_filename(x)
+#define PT_DEFAULTFILENAME ("perftracker.out")
+#define PT_TRACKPOINT() perftracker::auto_track __trackpoint(__FILE__, __LINE__, __PRETTY_FUNCTION__)
+#define PT_SETFILENAME(x) (perftracker::tracker::get_instance().set_filename(x))
+#define PT_DUMP() (perftracker::tracker::get_instance().dump())
 
 namespace
 perftracker
@@ -209,15 +211,19 @@ tracker
 private:
 	tracker()
 	{
-		set_filename("perftracker.out");
+		set_filename(PT_DEFAULTFILENAME);
 	}
 
 public:
 	~tracker()
 	{
-		//std::ostringstream os;
-		//std::cerr << os.str();
+		dump();
+	}
 
+public:
+	void
+	dump()
+	{
 		if (get_filename() != NULL && *get_filename() != 0) {
 			std::ofstream out(get_filename(), std::ios::binary);
 			dump_binary(out);
@@ -226,7 +232,6 @@ public:
 		}
 	}
 
-public:
 	void
 	dump_binary(std::ostream &out)
 	{
