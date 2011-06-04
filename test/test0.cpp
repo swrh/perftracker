@@ -12,9 +12,9 @@ tracker tracker::instance;
 void
 test0(unsigned int nsecs)
 {
-	PERF_TRACK();
+	PT_TRACKPOINT();
 
-	std::cout << "sleep(" << nsecs << ");" << std::endl;
+	std::cerr << "sleep(" << nsecs << ");" << std::endl;
 	usleep(nsecs * 100000);
 }
 
@@ -29,6 +29,8 @@ main(int argc, char *argv[])
 	test0(2);
 	test0(3);
 	test0(4);
+	test0(5);
+	test0(6);
 
 	return EXIT_SUCCESS;
 }

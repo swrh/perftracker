@@ -1,18 +1,18 @@
 #if !defined(_PERFTRACKER_HPP_)
 #define _PERFTRACKER_HPP_
 
-#include <err.h>
-#include <errno.h>
-
 #include <math.h>
 #include <string.h>
 #include <sys/time.h>
 
+#include <iostream>
+#include <fstream>
+
 #include <map>
 #include <list>
 
-#define _ENOSYS() do { errno = ENOSYS; err(EXIT_FAILURE, "%s:%d", __FILE__, __LINE__); } while (0)
-#define PERF_TRACK() perftracker::auto_track __autotrack(__FILE__, __LINE__, __PRETTY_FUNCTION__)
+#define PT_TRACKPOINT() perftracker::auto_track __autotrack(__FILE__, __LINE__, __PRETTY_FUNCTION__)
+#define PT_SETFILENAME(x) perftracker::tracker::get_instance().set_filename(x)
 
 namespace
 perftracker
@@ -48,7 +48,7 @@ public:
 	double
 	diff(const time_type &a, const time_type &b) const
 	{
-		return double(b.tv_sec - a.tv_sec) + double(b.tv_usec - a.tv_usec) / 1e6;
+		return static_cast<double>(b.tv_sec - a.tv_sec) + static_cast<double>(b.tv_usec - a.tv_usec) / 1e6;
 	}
 
 	double
@@ -127,6 +127,15 @@ private:
 
 };
 
+struct
+track_point_st
+{
+	char file[256];
+	unsigned int line;
+	char function[256];
+	unsigned int size;
+};
+
 class
 track_point
 {
@@ -134,14 +143,6 @@ public:
 	track_point(const char *file_, unsigned int line_, const char *func_)
 		: file(file_), line(line_), function(func_)
 	{
-	}
-
-	bool
-	operator ==(const track_point &p) const
-	{
-		if (function != p.function || file != p.file || line != p.line)
-			return false;
-		return true;
 	}
 
 	bool
@@ -173,6 +174,17 @@ public:
 		return function;
 	}
 
+	void
+	get_struct(struct track_point_st *st, unsigned int size) const
+	{
+		::bzero(st, sizeof(*st));
+
+		::snprintf(st->file, sizeof(st->file), "%s", get_file());
+		st->line = get_line();
+		::snprintf(st->function, sizeof(st->function), "%s", get_function());
+		st->size = size;
+	}
+
 private:
 	const char *file;
 	unsigned int line;
@@ -197,18 +209,46 @@ tracker
 private:
 	tracker()
 	{
+		set_filename("perftracker.out");
 	}
 
 public:
 	~tracker()
 	{
+		//std::ostringstream os;
+		//std::cerr << os.str();
+
+		if (get_filename() != NULL && *get_filename() != 0) {
+			std::ofstream out(get_filename(), std::ios::binary);
+			dump_binary(out);
+		} else {
+			dump_human(std::cout);
+		}
+	}
+
+public:
+	void
+	dump_binary(std::ostream &out)
+	{
+		for (std::map<track_point, std::list<time_entry> >::iterator it = log.begin(); it != log.end(); it++) {
+			std::list<time_entry> &l = it->second;
+			struct track_point_st p;
+			it->first.get_struct(&p, l.size());
+			out.write(reinterpret_cast<const char *>(&p), sizeof(p));
+			for (std::list<time_entry>::iterator e = l.begin(); e != l.end(); e++)
+				out.write(reinterpret_cast<const char *>(&*e), sizeof(struct time_entry));
+		}
+	}
+
+	void
+	dump_human(std::ostream &out)
+	{
 		for (std::map<track_point, std::list<time_entry> >::iterator it = log.begin(); it != log.end(); it++) {
 			const track_point &p = it->first;
 			std::list<time_entry> &l = it->second;
-			std::cout << "" << p.get_file() << ":" << p.get_line() << ": " << p.get_function() << std::endl;
-			for (std::list<time_entry>::iterator e = l.begin(); e != l.end(); e++) {
-				std::cout << "  " << e->when << ": " << e->much << " secs;" << std::endl;
-			}
+			out << "" << p.get_file() << ":" << p.get_line() << ": " << p.get_function() << std::endl;
+			for (std::list<time_entry>::iterator e = l.begin(); e != l.end(); e++)
+				out << "  " << e->when << ": " << e->much << " secs;" << std::endl;
 		}
 	}
 
@@ -231,6 +271,22 @@ public:
 
 private:
 	static tracker instance;
+
+public:
+	void
+	set_filename(const char *filename_)
+	{
+		filename = filename_;
+	}
+
+	const char *
+	get_filename() const
+	{
+		return filename;
+	}
+
+private:
+	const char *filename;
 
 };
 
