@@ -240,7 +240,7 @@ public:
 			struct track_point_st p;
 			it->first.get_struct(&p, l.size());
 			out.write(reinterpret_cast<const char *>(&p), sizeof(p));
-			for (std::list<time_entry>::iterator e = l.begin(); e != l.end(); e++)
+			for (std::list<time_entry>::reverse_iterator e = l.rbegin(); e != l.rend(); e++)
 				out.write(reinterpret_cast<const char *>(&*e), sizeof(struct time_entry));
 		}
 	}
@@ -252,7 +252,7 @@ public:
 			const track_point &p = it->first;
 			std::list<time_entry> &l = it->second;
 			out << "" << p.get_file() << ":" << p.get_line() << ": " << p.get_function() << std::endl;
-			for (std::list<time_entry>::iterator e = l.begin(); e != l.end(); e++)
+			for (std::list<time_entry>::reverse_iterator e = l.rbegin(); e != l.rend(); e++)
 				out << "  " << e->when << ": " << e->much << " secs;" << std::endl;
 		}
 	}
