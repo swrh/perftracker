@@ -135,7 +135,7 @@ track_point_st
 	char file[256];
 	unsigned int line;
 	char function[256];
-	unsigned int size;
+	unsigned long long int size;
 };
 
 class
@@ -177,7 +177,7 @@ public:
 	}
 
 	void
-	get_struct(struct track_point_st *st, unsigned int size) const
+	get_struct(struct track_point_st *st, unsigned long long int size) const
 	{
 		::bzero(st, sizeof(*st));
 
@@ -238,7 +238,11 @@ public:
 		for (std::map<track_point, std::list<time_entry> >::iterator it = log.begin(); it != log.end(); it++) {
 			std::list<time_entry> &l = it->second;
 			struct track_point_st p;
-			it->first.get_struct(&p, l.size());
+			unsigned long long int sz = 0;
+			for (std::list<time_entry>::iterator e = l.begin(); e != l.end(); e++)
+				sz++;
+			it->first.get_struct(&p, sz);
+			std::cout << p.file << ":" << p.line << ": " << p.function << "; (" << sz << ")" << std::endl;
 			out.write(reinterpret_cast<const char *>(&p), sizeof(p));
 			for (std::list<time_entry>::reverse_iterator e = l.rbegin(); e != l.rend(); e++)
 				out.write(reinterpret_cast<const char *>(&*e), sizeof(struct time_entry));
