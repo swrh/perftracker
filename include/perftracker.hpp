@@ -285,12 +285,33 @@ private:
 	std::list<time_entry> real_entries, temp_entries;
 };
 
+template <typename Lockable>
+class scope_locker
+{
+public:
+	scope_locker(Lockable &lockable_)
+		: lockable(lockable_)
+	{
+		lockable.lock();
+	}
+
+	~scope_locker()
+	{
+		lockable.unlock();
+	}
+
+private:
+	Lockable &lockable;
+
+};
+
 class
 tracker
 {
 private:
 	tracker()
 	{
+		pthread_mutex_init(&mutex, NULL);
 		set_filename(PT_DEFAULTFILENAME);
 	}
 
@@ -298,14 +319,31 @@ public:
 	~tracker()
 	{
 		dump();
+		pthread_mutex_destroy(&mutex);
+	}
+
+private:
+	pthread_mutex_t mutex;
+
+public:
+	void
+	lock()
+	{
+		pthread_mutex_lock(&mutex);
+	}
+
+	void
+	unlock()
+	{
+		pthread_mutex_unlock(&mutex);
 	}
 
 public:
 	void
 	dump()
 	{
-		if (get_filename() != NULL && *get_filename() != 0) {
-			std::ofstream out(get_filename(), std::ios::binary);
+		if (get_filename().size() != 0) {
+			std::ofstream out(get_filename().c_str(), std::ios::binary);
 			dump_binary(out);
 		} else {
 			dump_human(std::cout);
@@ -315,6 +353,7 @@ public:
 	void
 	dump_binary(std::ostream &out)
 	{
+		scope_locker<tracker> locker(*this);
 		for (std::map<track_point, entry_handler>::iterator it = log.begin(); it != log.end(); it++) {
 			std::list<time_entry> &l = it->second.get_entries();
 			struct track_point_st p;
@@ -332,6 +371,7 @@ public:
 	void
 	dump_human(std::ostream &out)
 	{
+		scope_locker<tracker> locker(*this);
 		for (std::map<track_point, entry_handler>::iterator it = log.begin(); it != log.end(); it++) {
 			const track_point &p = it->first;
 			std::list<time_entry> &l = it->second.get_entries();
@@ -345,6 +385,7 @@ public:
 	void
 	push(track_point point, time_entry tim)
 	{
+		scope_locker<tracker> locker(*this);
 		log[point].push(tim);
 	}
 
@@ -365,17 +406,19 @@ public:
 	void
 	set_filename(const char *filename_)
 	{
+		if (filename_ == NULL)
+			filename_ = "";
 		filename = filename_;
 	}
 
-	const char *
+	const std::string &
 	get_filename() const
 	{
 		return filename;
 	}
 
 private:
-	const char *filename;
+	std::string filename;
 
 };
 
