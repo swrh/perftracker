@@ -135,7 +135,7 @@ track_point_st
 	char file[256];
 	unsigned int line;
 	char function[256];
-	unsigned long long int size;
+	unsigned int size;
 };
 
 class
@@ -177,7 +177,7 @@ public:
 	}
 
 	void
-	get_struct(struct track_point_st *st, unsigned long long int size) const
+	get_struct(struct track_point_st *st, unsigned int size) const
 	{
 		::bzero(st, sizeof(*st));
 
@@ -203,6 +203,86 @@ time_entry
 	}
 
 	double when, much;
+};
+
+class
+entry_handler
+{
+public:
+	entry_handler()
+	{
+	}
+
+	~entry_handler()
+	{
+	}
+
+	std::list<time_entry> &
+	get_entries()
+	{
+		return real_entries;
+	}
+
+private:
+	time_entry
+	average(const std::list<time_entry> es)
+	{
+		time_entry entry(0, 0);
+
+		for (std::list<time_entry>::const_iterator it = es.begin(); it != es.end(); it++)
+			entry.much += it->much;
+
+		entry.when = es.rbegin()->when + (es.begin()->when - es.rbegin()->when) / es.size();
+
+		entry.much /= es.size();
+
+		return entry;
+	}
+
+	void
+	consolidate()
+	{
+		time_entry &r = *real_entries.begin();
+		time_entry t = *temp_entries.begin();
+
+		if (t.when - r.when <= 1)
+			return;
+
+		if (temp_entries.size() > 1) {
+			temp_entries.pop_front();
+			temp_entries.push_back(r);
+			r = average(temp_entries);
+		}
+
+		real_entries.push_front(t);
+		temp_entries.clear();
+	}
+
+public:
+	void
+	push(const time_entry &e)
+	{
+		if (real_entries.size() == 0) {
+			real_entries.push_front(e);
+			return;
+		}
+
+		if (temp_entries.size() > 0) {
+			temp_entries.push_front(e);
+			consolidate();
+			return;
+		}
+
+		if (e.when - real_entries.begin()->when < 1) {
+			temp_entries.push_front(e);
+			return;
+		}
+
+		real_entries.push_front(e);
+	}
+
+private:
+	std::list<time_entry> real_entries, temp_entries;
 };
 
 class
@@ -235,14 +315,14 @@ public:
 	void
 	dump_binary(std::ostream &out)
 	{
-		for (std::map<track_point, std::list<time_entry> >::iterator it = log.begin(); it != log.end(); it++) {
-			std::list<time_entry> &l = it->second;
+		for (std::map<track_point, entry_handler>::iterator it = log.begin(); it != log.end(); it++) {
+			std::list<time_entry> &l = it->second.get_entries();
 			struct track_point_st p;
+			it->first.get_struct(&p, l.size());
 			unsigned long long int sz = 0;
 			for (std::list<time_entry>::iterator e = l.begin(); e != l.end(); e++)
 				sz++;
-			it->first.get_struct(&p, sz);
-			std::cout << p.file << ":" << p.line << ": " << p.function << "; (" << sz << ")" << std::endl;
+			//std::cout << p.file << ":" << p.line << ": " << p.function << "; (" << sz << " vs " << l.size() << ")" << std::endl;
 			out.write(reinterpret_cast<const char *>(&p), sizeof(p));
 			for (std::list<time_entry>::reverse_iterator e = l.rbegin(); e != l.rend(); e++)
 				out.write(reinterpret_cast<const char *>(&*e), sizeof(struct time_entry));
@@ -252,9 +332,9 @@ public:
 	void
 	dump_human(std::ostream &out)
 	{
-		for (std::map<track_point, std::list<time_entry> >::iterator it = log.begin(); it != log.end(); it++) {
+		for (std::map<track_point, entry_handler>::iterator it = log.begin(); it != log.end(); it++) {
 			const track_point &p = it->first;
-			std::list<time_entry> &l = it->second;
+			std::list<time_entry> &l = it->second.get_entries();
 			out << "" << p.get_file() << ":" << p.get_line() << ": " << p.get_function() << std::endl;
 			for (std::list<time_entry>::reverse_iterator e = l.rbegin(); e != l.rend(); e++)
 				out << "  " << e->when << ": " << e->much << " secs;" << std::endl;
@@ -265,11 +345,11 @@ public:
 	void
 	push(track_point point, time_entry tim)
 	{
-		log[point].push_front(tim);
+		log[point].push(tim);
 	}
 
 private:
-	std::map<track_point, std::list<time_entry> > log;
+	std::map<track_point, entry_handler> log;
 
 public:
 	static tracker &
@@ -303,12 +383,14 @@ class
 auto_track
 {
 public:
+	inline
 	auto_track(const char *file, unsigned int line, const char *function = NULL)
 		: point(file, line, function)
 	{
 		start = t.start();
 	}
 
+	inline
 	~auto_track()
 	{
 		time_entry tim(start, t.stop());
