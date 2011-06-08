@@ -6,11 +6,15 @@
 
 #include <perftracker.hpp>
 
+#if 1
 #define DOSOMETHING(x, y) do { \
 	useconds_t __us = x * 10000 + y * 1000; \
 	std::cerr << " " << std::setw(10) << std::left << __func__ << std::right << " " << std::setw(10) << (static_cast<unsigned int>(__us) / 1000) << std::endl; \
 	::usleep(__us); \
 } while (0)
+#else
+#define DOSOMETHING(x, y)
+#endif
 
 using namespace perftracker;
 
@@ -164,9 +168,19 @@ main(int argc, char *argv[])
 	functions[14] = test14;
 	functions[15] = test15;
 
-	for (unsigned int n = 0; n < 1024; n++) {
-		std::cerr << " " << std::setw(10) << std::fixed << std::showpoint << std::setprecision(2) << static_cast<double>(n) / 10.23 << "% " << " " << std::setw(10) << n << " ";
-		(functions[myrand()])(myrand());
+#if 0
+	std::list<time_entry> l;
+	//printf("std::list::max_size() = %lu; sizeof() = %lu;\n", l.max_size(), sizeof(unsigned long int));
+	printf("std::list::max_size() = %u; sizeof() = %u;\n", l.max_size(), sizeof(unsigned long int));
+
+	for (unsigned int n = 0; n < l.max_size(); n++)
+		(functions[0])(0);
+#endif
+
+	unsigned int max = 1024;
+	for (unsigned int n = 0; n < max; n++) {
+		std::cerr << " " << std::setw(10) << std::fixed << std::showpoint << std::setprecision(2) << static_cast<double>(n) / (max - 1) * 100 << "% " << " " << std::setw(10) << n << " ";
+		(functions[rand() % 16])(rand() % 16);
 	}
 
 	PT_DUMP();

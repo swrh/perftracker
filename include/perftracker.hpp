@@ -197,12 +197,13 @@ private:
 struct
 time_entry
 {
-	time_entry(double when_, double much_)
-		: when(when_), much(much_)
+	time_entry(double when_, double total_, uint64_t ncalls_ = 1)
+		: when(when_), total(total_), ncalls(ncalls_)
 	{
 	}
 
-	double when, much;
+	double when, total;
+	uint64_t ncalls;
 };
 
 class
@@ -227,14 +228,14 @@ private:
 	time_entry
 	average(const std::list<time_entry> es)
 	{
-		time_entry entry(0, 0);
+		time_entry entry(0, 0, 0);
 
 		for (std::list<time_entry>::const_iterator it = es.begin(); it != es.end(); it++)
-			entry.much += it->much;
+			entry.total += it->total;
 
-		entry.when = es.rbegin()->when + (es.begin()->when - es.rbegin()->when) / es.size();
-
-		entry.much /= es.size();
+		entry.ncalls = es.size();
+		entry.when = es.rbegin()->when + (es.begin()->when - es.rbegin()->when) / entry.ncalls;
+		entry.total /= entry.ncalls;
 
 		return entry;
 	}
@@ -377,7 +378,7 @@ public:
 			std::list<time_entry> &l = it->second.get_entries();
 			out << "" << p.get_file() << ":" << p.get_line() << ": " << p.get_function() << std::endl;
 			for (std::list<time_entry>::reverse_iterator e = l.rbegin(); e != l.rend(); e++)
-				out << "  " << e->when << ": " << e->much << " secs;" << std::endl;
+				out << "  " << e->when << ": " << e->total << " secs;" << std::endl;
 		}
 	}
 

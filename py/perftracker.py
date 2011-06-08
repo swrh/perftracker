@@ -4,6 +4,63 @@ from pdb import set_trace
 import struct
 from numpy import array
 from pylab import * #plot, xlabel, ylabel, title, legend, show
+import numpy
+
+def smooth(x,window_len=11,window='hanning'):
+    """smooth the data using a window with requested size.
+    
+    This method is based on the convolution of a scaled window with the signal.
+    The signal is prepared by introducing reflected copies of the signal 
+    (with the window size) in both ends so that transient parts are minimized
+    in the begining and end part of the output signal.
+    
+    input:
+        x: the input signal 
+        window_len: the dimension of the smoothing window; should be an odd integer
+        window: the type of window from 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'
+            flat window will produce a moving average smoothing.
+
+    output:
+        the smoothed signal
+        
+    example:
+
+    t=linspace(-2,2,0.1)
+    x=sin(t)+randn(len(t))*0.1
+    y=smooth(x)
+    
+    see also: 
+    
+    numpy.hanning, numpy.hamming, numpy.bartlett, numpy.blackman, numpy.convolve
+    scipy.signal.lfilter
+ 
+    TODO: the window parameter could be the window itself if an array instead of a string   
+    """
+
+    if x.ndim != 1:
+        raise ValueError, "smooth only accepts 1 dimension arrays."
+
+    if x.size < window_len:
+        raise ValueError, "Input vector needs to be bigger than window size."
+
+
+    if window_len<3:
+        return x
+
+
+    if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
+        raise ValueError, "Window is on of 'flat', 'hanning', 'hamming', 'bartlett', 'blackman'"
+
+
+    s=numpy.r_[2*x[0]-x[window_len-1::-1],x,2*x[-1]-x[-1:-window_len:-1]]
+    #print(len(s))
+    if window == 'flat': #moving average
+        w=numpy.ones(window_len,'d')
+    else:
+        w=eval('numpy.'+window+'(window_len)')
+
+    y=numpy.convolve(w/w.sum(),s,mode='same')
+    return y[window_len:-window_len+1]
 
 class TrackPoint():
         def __init__(self, filename, line, function, entries):
@@ -13,16 +70,31 @@ class TrackPoint():
                 self.entries = entries
 
 def eat_point(file):
-        ( filename, line, function, n ) = struct.unpack('256sI256sI', file.read(520))
+        desc = '256sI256sI'
+        dlen = 520
+        data = file.read(dlen)
+        if len(data) != dlen:
+                return None
+
+        ( filename, line, function, n ) = struct.unpack(desc, data)
         filename = filename.rstrip("\x00")
         function = function.rstrip("\x00")
 
-        #print filename + ':' + str(line) + '; n = ' + str(n) + ';'
-        n = n * 2
+        print filename + ':' + str(line) + '; n = ' + str(n) + ';'
 
-        arr = struct.unpack(str(n) + 'd', file.read(n * 8))
+        desc = ''
+        dlen = n * (8 + 8 + 8)
+        data = file.read(dlen)
+        if len(data) != dlen:
+                return None
 
-        point = TrackPoint(filename, line, function, array(arr).reshape(-1, 2))
+        while n > 0:
+                desc = desc + 'ddQ'
+                n = n - 1
+
+        arr = struct.unpack(desc, data)
+
+        point = TrackPoint(filename, line, function, array(arr).reshape(-1, 3))
 
         return point
 
@@ -32,26 +104,24 @@ def read_file(filename):
 
         points = []
 
-        try:
-                while True:
-                        pt = eat_point(file)
-                        points.append(pt)
-                        #print pt.function + ';'
-
-        except struct.error:
-                pass
+        while True:
+                pt = eat_point(file)
+                if pt == None:
+                        break
+                points.append(pt)
 
         return points
 
 def plot_once(points):
         l = []
         for p in points:
-                plot(p.entries[:, 0], p.entries[:, 1])
+                plot(p.entries[:, 0], p.entries[:, 1] * p.entries[:, 2])
                 l.append(p.function)
         if len(l) > 0:
                 xlabel('instant')
                 ylabel('spent')
-                legend(l)
+                if len(l) > 8:
+                        legend(l)
                 show()
 
 def plot_every(points):
@@ -93,7 +163,7 @@ def plot_rising(points):
                 show()
 
 
-pts = read_file('perftracker.out-2')
+pts = read_file('perftracker.out')
 
 set_trace()
 
