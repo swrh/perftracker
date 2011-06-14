@@ -197,13 +197,13 @@ private:
 struct
 time_entry
 {
-	time_entry(double when_, double total_, uint64_t ncalls_ = 1)
+	time_entry(double when_, double total_, unsigned int ncalls_ = 1)
 		: when(when_), total(total_), ncalls(ncalls_)
 	{
 	}
 
 	double when, total;
-	uint64_t ncalls;
+	unsigned int ncalls;
 };
 
 class
