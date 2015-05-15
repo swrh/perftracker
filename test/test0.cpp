@@ -42,14 +42,14 @@ dosomething(const char *func, uint x, uint y)
 	i = ::arc4random_uniform(__us);
 
 	while (i--) {
-		snprintf(filename, sizeof(filename), "/tmp/.test%0d", i);
+		(void)snprintf(filename, sizeof(filename), "/tmp/.test%0d", i);
 		if ((fd = open(filename, O_RDWR | O_CREAT | O_APPEND)) == -1)
 			err(1, "open");
 
 		if (fchmod(fd, S_IRWXU | S_IRWXG | S_IRWXO) == -1)
 			err(1, "fchmod");
 
-		write(fd, "test\n", sizeof("test"));
+		write(fd, "test\n", strlen("test\n"));
 		close(fd);
 	}
 }
