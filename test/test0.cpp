@@ -208,7 +208,7 @@ main(void)
 	unsigned int max = 1024;
 	for (unsigned int n = 0; n < max; n++) {
 		std::cerr << " " << std::setw(10) << std::fixed << std::showpoint << std::setprecision(2) << static_cast<double>(n) / (max - 1) * 100 << "% " << " " << std::setw(10) << n << " ";
-		(functions[rand() % 16])(arc4random() % 16);
+		(functions[arc4random_uniform(16)])(arc4random_uniform(16));
 	}
 
 	PT_DUMP();
