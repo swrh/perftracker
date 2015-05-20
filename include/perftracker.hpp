@@ -11,10 +11,15 @@
 #include <map>
 #include <list>
 
-#define PT_DEFAULTFILENAME ("perftracker.out")
-#define PT_TRACKPOINT() perftracker::auto_track __trackpoint(__FILE__, __LINE__, __PRETTY_FUNCTION__)
-#define PT_SETFILENAME(x) (perftracker::tracker::get_instance().set_filename(x))
-#define PT_DUMP() (perftracker::tracker::get_instance().dump())
+#define PT_DEFAULTFILENAME	("perftracker.out")
+#define PT_TRACKPOINT()		perftracker::auto_track \
+	    __trackpoint(__FILE__, __LINE__, __PRETTY_FUNCTION__)
+#define PT_SETFILENAME(x)	do { \
+		perftracker::tracker::get_instance().set_filename(x); \
+	} while (0)
+#define PT_DUMP()		do { \
+		perftracker::tracker::get_instance().dump(); \
+	} while (0)
 
 namespace
 perftracker
