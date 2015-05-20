@@ -24,7 +24,6 @@
 namespace
 perftracker
 {
-
 class
 timer
 {
@@ -49,25 +48,27 @@ public:
 
 		::gettimeofday(&tv, &tz);
 
-		return tv;
+		return (tv);
 	}
 
 	double
 	diff(const time_type &a, const time_type &b) const
 	{
-		return static_cast<double>(b.tv_sec - a.tv_sec) + static_cast<double>(b.tv_usec - a.tv_usec) / 1e6;
+		return (static_cast<double>(b.tv_sec - a.tv_sec) +
+		    static_cast<double>(b.tv_usec - a.tv_usec) / 1e6);
 	}
 
 	double
 	start()
 	{
 		if (is_running())
-			return NAN;
+			return (NAN);
 
 		t_start = t_split = t_lastsplit = t_stop = now();
 		running = true;
 
-		return t_start.tv_sec + (static_cast<double>(t_start.tv_usec) / 1e6);
+		return (t_start.tv_sec +
+		    (static_cast<double>(t_start.tv_usec) / 1e6));
 	}
 
 	double
@@ -77,19 +78,19 @@ public:
 		t_lastsplit = t_split;
 		t_split = t_stop;
 
-		return diff(t_split, t_stop);
+		return (diff(t_split, t_stop));
 	}
 
 	double
 	current() const
 	{
-		return diff(t_split, now());
+		return (diff(t_split, now()));
 	}
 
 	double
 	lastsplit() const
 	{
-		return diff(t_lastsplit, t_split);
+		return (diff(t_lastsplit, t_split));
 	}
 
 	double
@@ -98,7 +99,7 @@ public:
 		t_stop = now();
 		running = false;
 
-		return total();
+		return (total());
 	}
 
 	double
@@ -107,13 +108,13 @@ public:
 		if (is_running())
 			t_stop = now();
 
-		return diff(t_start, t_stop);
+		return (diff(t_start, t_stop));
 	}
 
 	inline bool
 	is_running() const
 	{
-		return running;
+		return (running);
 	}
 
 private:
@@ -125,22 +126,19 @@ private:
 		z.tv_sec = 0;
 		z.tv_usec = 0;
 
-		return z;
+		return (z);
 	}
 
 private:
-	time_type t_start, t_split, t_lastsplit, t_stop;
-	bool running;
-
+	time_type	t_start, t_split, t_lastsplit, t_stop;
+	bool		running;
 };
 
 struct
 track_point_st
 {
-	char file[256];
-	unsigned int line;
-	char function[256];
-	unsigned int size;
+	char		file[256], function[256];
+	unsigned int	line, size;
 };
 
 class
@@ -156,29 +154,29 @@ public:
 	operator <(const track_point &p) const
 	{
 		if (function != p.function)
-			return function < p.function;
+			return (function < p.function);
 		if (file != p.file)
-			return file < p.file;
-		return line < p.line;
+			return (file < p.file);
+		return (line < p.line);
 	}
 
 public:
 	const char *
 	get_file() const
 	{
-		return file;
+		return (file);
 	}
 
 	unsigned int
 	get_line() const
 	{
-		return line;
+		return (line);
 	}
 
 	const char *
 	get_function() const
 	{
-		return function;
+		return (function);
 	}
 
 	void
@@ -188,15 +186,14 @@ public:
 
 		::snprintf(st->file, sizeof(st->file), "%s", get_file());
 		st->line = get_line();
-		::snprintf(st->function, sizeof(st->function), "%s", get_function());
+		::snprintf(st->function, sizeof(st->function), "%s",
+		    get_function());
 		st->size = size;
 	}
 
 private:
-	const char *file;
-	unsigned int line;
-	const char *function;
-
+	const char	*file, *function;
+	unsigned int	 line;
 };
 
 struct
@@ -207,8 +204,8 @@ time_entry
 	{
 	}
 
-	double when, total;
-	unsigned int ncalls;
+	double		when, total;
+	unsigned int	ncalls;
 };
 
 class
@@ -226,7 +223,7 @@ public:
 	std::list<time_entry> &
 	get_entries()
 	{
-		return real_entries;
+		return (real_entries);
 	}
 
 private:
@@ -235,21 +232,23 @@ private:
 	{
 		time_entry entry(0, 0, 0);
 
-		for (std::list<time_entry>::const_iterator it = es.begin(); it != es.end(); it++)
+		for (std::list<time_entry>::const_iterator it = es.begin();
+		     it != es.end(); it++)
 			entry.total += it->total;
 
 		entry.ncalls = es.size();
-		entry.when = es.rbegin()->when + (es.begin()->when - es.rbegin()->when) / entry.ncalls;
+		entry.when = es.rbegin()->when +
+		    (es.begin()->when - es.rbegin()->when) / entry.ncalls;
 		entry.total /= entry.ncalls;
 
-		return entry;
+		return (entry);
 	}
 
 	void
 	consolidate()
 	{
-		time_entry &r = *real_entries.begin();
-		time_entry t = *temp_entries.begin();
+		time_entry	&r = *real_entries.begin();
+		time_entry	 t = *temp_entries.begin();
 
 		if (t.when - r.when <= 1)
 			return;
@@ -288,7 +287,7 @@ public:
 	}
 
 private:
-	std::list<time_entry> real_entries, temp_entries;
+	std::list<time_entry>	real_entries, temp_entries;
 };
 
 template <typename Lockable>
@@ -349,7 +348,8 @@ public:
 	dump()
 	{
 		if (get_filename().size() != 0) {
-			std::ofstream out(get_filename().c_str(), std::ios::binary);
+			std::ofstream out(get_filename().c_str(),
+			    std::ios::binary);
 			dump_binary(out);
 		} else {
 			dump_human(std::cout);
@@ -359,31 +359,43 @@ public:
 	void
 	dump_binary(std::ostream &out)
 	{
-		scope_locker<tracker> locker(*this);
-		for (std::map<track_point, entry_handler>::iterator it = log.begin(); it != log.end(); it++) {
+		scope_locker<tracker>				locker(*this);
+		std::map<track_point, entry_handler>::iterator	it;
+		for (it = log.begin(); it != log.end(); it++) {
 			std::list<time_entry> &l = it->second.get_entries();
 			struct track_point_st p;
 			it->first.get_struct(&p, l.size());
+
 			unsigned long long int sz = 0;
-			for (std::list<time_entry>::iterator e = l.begin(); e != l.end(); e++)
+			for (std::list<time_entry>::iterator e = l.begin();
+			     e != l.end(); e++)
 				sz++;
+
 			//std::cout << p.file << ":" << p.line << ": " << p.function << "; (" << sz << " vs " << l.size() << ")" << std::endl;
 			out.write(reinterpret_cast<const char *>(&p), sizeof(p));
-			for (std::list<time_entry>::reverse_iterator e = l.rbegin(); e != l.rend(); e++)
-				out.write(reinterpret_cast<const char *>(&*e), sizeof(struct time_entry));
+
+			std::list<time_entry>::reverse_iterator e;
+			for (e = l.rbegin(); e != l.rend(); e++)
+				out.write(reinterpret_cast<const char *>(&*e),
+				    sizeof(struct time_entry));
 		}
 	}
 
 	void
 	dump_human(std::ostream &out)
 	{
-		scope_locker<tracker> locker(*this);
-		for (std::map<track_point, entry_handler>::iterator it = log.begin(); it != log.end(); it++) {
+		scope_locker<tracker>				locker(*this);
+		std::map<track_point, entry_handler>::iterator	it;
+
+		for (it = log.begin(); it != log.end(); it++) {
 			const track_point &p = it->first;
 			std::list<time_entry> &l = it->second.get_entries();
-			out << "" << p.get_file() << ":" << p.get_line() << ": " << p.get_function() << std::endl;
-			for (std::list<time_entry>::reverse_iterator e = l.rbegin(); e != l.rend(); e++)
-				out << "  " << e->when << ": " << e->total << " secs;" << std::endl;
+			out << "" << p.get_file() << ":" << p.get_line()
+			    << ": " << p.get_function() << std::endl;
+			std::list<time_entry>::reverse_iterator e;
+			for (e = l.rbegin(); e != l.rend(); e++)
+				out << "  " << e->when << ": " << e->total
+				    << " secs;" << std::endl;
 		}
 	}
 
@@ -402,7 +414,7 @@ public:
 	static tracker &
 	get_instance()
 	{
-		return instance;
+		return (instance);
 	}
 
 private:
@@ -420,7 +432,7 @@ public:
 	const std::string &
 	get_filename() const
 	{
-		return filename;
+		return (filename);
 	}
 
 private:
@@ -447,12 +459,12 @@ public:
 	}
 
 private:
-	timer t;
-	track_point point;
-	double start;
+	timer		t;
+	track_point	point;
+	double		start;
 
 };
 
-}
+} // namespace perftracker
 
 #endif // !defined(_PERFTRACKER_HPP_)
