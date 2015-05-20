@@ -1,0 +1,6 @@
+PROG=	test0
+SRCS=	test0.cpp
+
+CXXFLAGS+= -Wall -I${.CURDIR}/../include
+
+.include <bsd.prog.mk>
