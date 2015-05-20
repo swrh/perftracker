@@ -4,6 +4,7 @@
 #include <math.h>
 #include <string.h>
 #include <sys/time.h>
+#include <sys/resource.h>
 
 #include <iostream>
 #include <fstream>
@@ -28,34 +29,35 @@ class
 timer
 {
 public:
-	typedef struct timeval time_type;
-
 	timer()
 	{
 		running = false;
 		t_start = t_split = t_lastsplit = t_stop = get_zero();
 	}
 
-	~timer()
-	{
-	}
+	~timer() { }
 
-	time_type
+	double
 	now() const
 	{
-		time_type tv;
-		struct timezone tz;
+		struct rusage	u;
+		double		r;
 
-		::gettimeofday(&tv, &tz);
+		if (::getrusage(RUSAGE_SELF, &u) != 0)
+			err(1, "getrusage");
 
-		return (tv);
+		r = u.ru_utime.tv_sec * 1000;
+		r += u.ru_utime.tv_usec / 1000;
+		r += u.ru_stime.tv_sec * 1000;
+		r += u.ru_stime.tv_usec / 1000;
+
+		return (r);
 	}
 
 	double
-	diff(const time_type &a, const time_type &b) const
+	diff(const double &a, const double &b) const
 	{
-		return (static_cast<double>(b.tv_sec - a.tv_sec) +
-		    static_cast<double>(b.tv_usec - a.tv_usec) / 1e6);
+		return (a - b);
 	}
 
 	double
@@ -67,8 +69,7 @@ public:
 		t_start = t_split = t_lastsplit = t_stop = now();
 		running = true;
 
-		return (t_start.tv_sec +
-		    (static_cast<double>(t_start.tv_usec) / 1e6));
+		return (t_start);
 	}
 
 	double
@@ -118,20 +119,15 @@ public:
 	}
 
 private:
-	time_type
+	double
 	get_zero()
 	{
-		time_type z;
-
-		z.tv_sec = 0;
-		z.tv_usec = 0;
-
-		return (z);
+		return (0);
 	}
 
 private:
-	time_type	t_start, t_split, t_lastsplit, t_stop;
-	bool		running;
+	double	t_start, t_split, t_lastsplit, t_stop;
+	bool	running;
 };
 
 struct
@@ -146,7 +142,7 @@ track_point
 {
 public:
 	track_point(const char *file_, unsigned int line_, const char *func_)
-		: file(file_), line(line_), function(func_)
+		: file(file_), function(func_), line(line_)
 	{
 	}
 
@@ -395,7 +391,7 @@ public:
 			std::list<time_entry>::reverse_iterator e;
 			for (e = l.rbegin(); e != l.rend(); e++)
 				out << "  " << e->when << ": " << e->total
-				    << " secs;" << std::endl;
+				    << " msecs;" << std::endl;
 		}
 	}
 
