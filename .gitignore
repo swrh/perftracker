@@ -1,0 +1,5 @@
+test/.depend
+test/test0
+test/*.out
+test/*.o
+**.swp
