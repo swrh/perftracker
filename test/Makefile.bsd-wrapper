@@ -1,6 +1,7 @@
 PROG=	test0
 SRCS=	test0.cpp
+NOMAN=	no
 
-CXXFLAGS+= -Wall -I${.CURDIR}/../include
+CXXFLAGS+= -Wall -Wextra -I${.CURDIR}/../include
 
 .include <bsd.prog.mk>
