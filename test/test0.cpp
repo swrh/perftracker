@@ -49,7 +49,9 @@ dosomething(const char *func, uint x, uint y)
 		if (fchmod(fd, S_IRWXU | S_IRWXG | S_IRWXO) == -1)
 			err(1, "fchmod");
 
-		write(fd, "test\n", strlen("test\n"));
+		for (int j = 1024; j > 0; --j)
+			write(fd, "test\n", sizeof("test"));
+
 		close(fd);
 	}
 }
