@@ -55,12 +55,6 @@ public:
 	}
 
 	double
-	diff(const double &a, const double &b) const
-	{
-		return (a - b);
-	}
-
-	double
 	start()
 	{
 		if (is_running())
@@ -79,19 +73,19 @@ public:
 		t_lastsplit = t_split;
 		t_split = t_stop;
 
-		return (diff(t_split, t_stop));
+		return (t_stop - t_split);
 	}
 
 	double
 	current() const
 	{
-		return (diff(t_split, now()));
+		return (now() - t_split);
 	}
 
 	double
 	lastsplit() const
 	{
-		return (diff(t_lastsplit, t_split));
+		return (t_split - t_lastsplit);
 	}
 
 	double
@@ -109,7 +103,7 @@ public:
 		if (is_running())
 			t_stop = now();
 
-		return (diff(t_start, t_stop));
+		return (t_stop - t_start);
 	}
 
 	inline bool
