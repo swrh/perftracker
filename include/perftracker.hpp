@@ -32,7 +32,7 @@ public:
 	timer()
 	{
 		running = false;
-		t_start = t_split = t_lastsplit = t_stop = get_zero();
+		t_start = t_split = t_lastsplit = t_stop = 0;
 	}
 
 	~timer() { }
@@ -116,13 +116,6 @@ public:
 	is_running() const
 	{
 		return (running);
-	}
-
-private:
-	double
-	get_zero()
-	{
-		return (0);
 	}
 
 private:
