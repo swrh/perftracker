@@ -46,10 +46,10 @@ public:
 		if (::getrusage(RUSAGE_SELF, &u) != 0)
 			err(1, "getrusage");
 
-		r = u.ru_utime.tv_sec * 1000;
-		r += u.ru_utime.tv_usec / 1000;
-		r += u.ru_stime.tv_sec * 1000;
-		r += u.ru_stime.tv_usec / 1000;
+		r = u.ru_utime.tv_sec;
+		r += u.ru_utime.tv_usec / 1e6;
+		r += u.ru_stime.tv_sec;
+		r += u.ru_stime.tv_usec / 1e6;
 
 		return (r);
 	}
@@ -384,7 +384,7 @@ public:
 			std::list<time_entry>::reverse_iterator e;
 			for (e = l.rbegin(); e != l.rend(); e++)
 				out << "  " << e->when << ": " << e->total
-				    << " msecs;" << std::endl;
+				    << " secs;" << std::endl;
 		}
 	}
 
