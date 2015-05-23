@@ -35,11 +35,11 @@ dosomething(const char *func, uint x, uint y)
 	char		filename[MAXPATHLEN];
 	uint		__us = x * y;
 
+	i = ::arc4random_uniform(__us);
+
 	std::cerr << " " << std::setw(10) << std::left << func
 	    << std::right << " " << std::setw(10)
-	    << (static_cast<unsigned int>(__us) / 1000) << std::endl;
-
-	i = ::arc4random_uniform(__us);
+	    << i << std::endl;
 
 	while (i--) {
 		(void)snprintf(filename, sizeof(filename), "/tmp/.test%0d", i);
@@ -50,7 +50,7 @@ dosomething(const char *func, uint x, uint y)
 			err(1, "fchmod");
 
 		for (int j = 1024; j > 0; --j)
-			write(fd, "test\n", sizeof("test"));
+			write(fd, "test\n", sizeof("test\n"));
 
 		close(fd);
 	}
