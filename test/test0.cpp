@@ -26,6 +26,22 @@ using namespace perftracker;
 tracker tracker::instance;
 
 void
+safewrite(int fd, const char *buf, size_t len)
+{
+	ssize_t wr;
+
+	while (len > 0) {
+		wr = write(fd, buf, len);
+		if (wr < 0)
+			err(1, "safewrite");
+		if (wr == 0)
+			errx(1, "safewrite: short write");
+		buf += wr;
+		len -= wr;
+	}
+}
+
+void
 dosomething(const char *func, uint x, uint y)
 {
 	uint		i;
@@ -48,7 +64,7 @@ dosomething(const char *func, uint x, uint y)
 			err(1, "fchmod");
 
 		for (int j = 1024; j > 0; --j)
-			write(fd, "test\n", sizeof("test\n"));
+			safewrite(fd, "test\n", sizeof("test\n"));
 
 		close(fd);
 	}
