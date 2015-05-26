@@ -25,8 +25,6 @@ using namespace perftracker;
 
 tracker tracker::instance;
 
-static unsigned long next = 1;
-
 void
 dosomething(const char *func, uint x, uint y)
 {
@@ -54,12 +52,6 @@ dosomething(const char *func, uint x, uint y)
 
 		close(fd);
 	}
-}
-
-unsigned int
-myrand(void) {
-	next = next * 1103515245 + 12345;
-	return (unsigned int)(next / 32) % 16;
 }
 
 void
